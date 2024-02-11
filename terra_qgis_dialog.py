@@ -50,7 +50,7 @@ class Client:
             method=method,
             url=self._build_url(resource),
             json=data,
-            headers=self._build_auth(headers),
+            headers=self._build_headers(headers),
         )
 
     @property
@@ -61,11 +61,11 @@ class Client:
     def api_key(self, key):
         self._api_key = key
 
-    def _build_auth(self, headers):
+    def _build_headers(self, headers):
         if not headers:
             headers = {}
 
-        headers.setdefault("x-api-key", self._api_key)
+        headers.setdefault("api-key", self._api_key)
 
     def _build_url(self, path):
         return f"{self._api_url}{path}"
@@ -116,16 +116,13 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
         token = self.apiKeyInputBar.text()
 
         if token is None:
-            warn = "Token must be entered"
-            self._warn(warn)
             return
 
         self.apiKeyInputBar.clear()
         self.save_api_key(token)
 
     def sync_bar_processing_callback(self):
-        api_key = self.get_api_key()
-        self.transport.api_key = api_key
+        self.transport.api_key = self.get_api_key()
 
         abstract_data = {"Abstract": "Data"}
 
@@ -136,9 +133,6 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def get_api_key(self):
         return self.settings.value("Api-Key")
-
-    def _warn(self, message: str):
-        ...
 
     @property
     def default_transport(self):
