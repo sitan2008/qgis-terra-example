@@ -35,9 +35,9 @@ import requests
 # For fast review
 class Client:
 
-    def __init__(self, api_url: str):
+    def __init__(self, api_url: str, api_key: str):
         self._api_url = api_url
-        self._api_key = None
+        self._api_key = api_key
 
     def _perform_request(
             self,
@@ -53,19 +53,12 @@ class Client:
             headers=self._build_headers(headers),
         )
 
-    @property
-    def api_key(self):
-        return self._api_key
-
-    @api_key.setter
-    def api_key(self, key):
-        self._api_key = key
-
     def _build_headers(self, headers):
         if not headers:
             headers = {}
 
         headers.setdefault("api-key", self._api_key)
+        return headers
 
     def _build_url(self, path):
         return f"{self._api_url}{path}"
@@ -75,7 +68,7 @@ class TerraClient(Client):
     """A Facade for Terra Services Http Integration"""
 
     def upload_abstract_data(self, data: dict):
-        resource = "/upload_abstract_data"
+        resource = ""
         return self._perform_request(
             method="POST",
             resource=resource,
@@ -122,8 +115,6 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
         self.save_api_key(token)
 
     def sync_bar_processing_callback(self):
-        self.transport.api_key = self.get_api_key()
-
         abstract_data = {"Abstract": "Data"}
 
         self.transport.upload_abstract_data(data=abstract_data)
@@ -131,11 +122,9 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
     def save_api_key(self, token: str):
         self.settings.setValue("Api-Key", token)
 
-    def get_api_key(self):
-        return self.settings.value("Api-Key")
-
     @property
     def default_transport(self):
         return TerraClient(
-            api_url=self.settings.value("Api-Url", "https://example.com"),
+            api_url=self.settings.value("Api-Url", "https://webhook.site/26a2ac84-d69a-4f45-a12a-fcd72bbeb52b"),
+            api_key=self.settings.value("Api-Key", "Abstract Api Key"),
         )
