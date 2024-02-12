@@ -35,7 +35,7 @@ import requests
 # For fast review
 class Client:
 
-    def __init__(self, api_url: str, api_key: str):
+    def __init__(self, api_url: str = "", api_key: str = ""):
         self._api_url = api_url
         self._api_key = api_key
 
@@ -52,6 +52,22 @@ class Client:
             json=data,
             headers=self._build_headers(headers),
         )
+
+    @property
+    def api_key(self):
+        return self._api_key
+
+    @api_key.setter
+    def api_key(self, key):
+        self._api_key = key
+
+    @property
+    def api_url(self):
+        return self._api_url
+
+    @api_url.setter
+    def api_url(self, url):
+        self._api_url = url
 
     def _build_headers(self, headers):
         if not headers:
@@ -75,13 +91,21 @@ class TerraClient(Client):
             data=data,
         )
 
+
+def new_terra_client(api_url: str, api_key: str):
+    client = TerraClient()
+    client.api_key = api_key
+    client.api_url = api_url
+    return client
+
+
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'terra_qgis_dialog_base.ui'))
 
 
 class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, settings: QSettings, transport=None, parent=None):
+    def __init__(self, settings: QSettings, parent=None):
         """Constructor."""
         super(TerraQgisDialog, self).__init__(parent)
         self.setupUi(self)
@@ -89,10 +113,8 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setWindowTitle("TerraCloud menu")
 
         self.settings = settings
-        self.transport = transport or self.default_transport
 
         self.setup_submit_button()
-        self.setup_input_token_bar()
         self.setup_sync_button()
 
     def setup_submit_button(self):
@@ -100,10 +122,6 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def setup_sync_button(self):
         self.syncCloudServiceButton.clicked.connect(self.sync_bar_processing_callback)
-
-    def setup_input_token_bar(self):
-        message_info = "Input token here..."
-        self.apiKeyInputBar.setText(self.tr(message_info))
 
     def input_bar_processing_callback(self):
         token = self.apiKeyInputBar.text()
@@ -115,16 +133,14 @@ class TerraQgisDialog(QtWidgets.QDialog, FORM_CLASS):
         self.save_api_key(token)
 
     def sync_bar_processing_callback(self):
-        abstract_data = {"Abstract": "Data"}
-
-        self.transport.upload_abstract_data(data=abstract_data)
-
-    def save_api_key(self, token: str):
-        self.settings.setValue("Api-Key", token)
-
-    @property
-    def default_transport(self):
-        return TerraClient(
+        client = new_terra_client(
             api_url=self.settings.value("Api-Url", "https://webhook.site/26a2ac84-d69a-4f45-a12a-fcd72bbeb52b"),
             api_key=self.settings.value("Api-Key", "Abstract Api Key"),
         )
+
+        abstract_data = {"Abstract": "Data"}
+
+        client.upload_abstract_data(data=abstract_data)
+
+    def save_api_key(self, token: str):
+        self.settings.setValue("Api-Key", token)
